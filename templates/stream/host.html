@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Video to RTMP</title>
+</head>
+<body>
+
+<h2>Stream Video to RTMP Server</h2>
+<video id="videoElement" width="640" height="480" autoplay></video>
+<button id="startButton">Start Streaming</button>
+
+<script>
+    const videoElement = document.getElementById('videoElement');
+    const startButton = document.getElementById('startButton');
+
+    let mediaStream = null;
+    let mediaRecorder = null;
+
+    async function startCapture() {
+        try {
+            // Get the user's webcam video
+            mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            videoElement.srcObject = mediaStream;
+        } catch (err) {
+            console.error("Error accessing camera: ", err);
+        }
+    }
+
+    startButton.addEventListener('click', async () => {
+        if (!mediaStream) {
+            await startCapture();
+        }
+
+        // Send the video stream to Python server
+        mediaRecorder = new MediaRecorder(mediaStream, { mimeType: 'video/webm' });
+
+        mediaRecorder.ondataavailable = function(event) {
+            if (event.data && event.data.size > 0) {
+                sendData(event.data);  // Send chunks to server
+            }
+        };
+
+        mediaRecorder.start(1000);  // Send data every second
+    });
+
+    // Function to send video data chunks to server
+    async function sendData(data) {
+        const formData = new FormData();
+        formData.append('video_chunk', data);
+
+        await fetch('https://rtmp-stream.zehntech.net/upload_video', {
+            method: 'POST',
+            body: formData
+        }).then(response => response.json())
+        .then(data => {
+            console.log('Success:', data);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+</script>
+
+</body>
+</html>
