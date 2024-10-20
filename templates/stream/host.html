@@ -50,7 +50,7 @@
         const formData = new FormData();
         formData.append('video_chunk', data);
 
-        await fetch('https://rtmp-stream.zehntech.net/upload_video', {
+        await fetch('https://streampy.zehntech.net/upload_video', {
             method: 'POST',
             body: formData
         }).then(response => response.json())
